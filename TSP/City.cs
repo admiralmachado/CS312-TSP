@@ -11,10 +11,13 @@ namespace TSP
         public const double INCREASE_X = 1000;
         public const double DECREASE_X = 1000;
 
-        public City(double x, double y)
+        public int CityId { get; private set; }
+
+        public City(double x, double y, int id)
         {
             _X = x;
             _Y = y;
+            CityId = id;
         }
 
         private double _X;
@@ -34,7 +37,7 @@ namespace TSP
 
         /// <summary>
         /// how much does it cost to get from this to the destination?
-        /// note that this is an asymmetric cost function
+        /// note that this is a symmetric cost function
         /// </summary>
         /// <param name="destination">um, the destination</param>
         /// <returns></returns>

@@ -135,7 +135,7 @@ namespace TSP
             bssf = null; 
 
             for (int i = 0; i < _size; i++)
-                Cities[i] = new City(rnd.NextDouble(), rnd.NextDouble());
+                Cities[i] = new City(rnd.NextDouble(), rnd.NextDouble(), i);
 
             cityBrushStyle = new SolidBrush(Color.Black);
             cityBrushStartStyle = new SolidBrush(Color.Red);
