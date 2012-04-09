@@ -113,7 +113,9 @@ namespace TSP
                 bssf = state.Path;
                 //Complete the path by adding the only destination left
                 bssf.Add(cities[state.Children[0]]);
-                //Prune
+                
+
+                //Comment out this line to disable pruning
                 agenda.Prune(bssf_cost);
             }
         }
@@ -131,13 +133,17 @@ namespace TSP
                 //The last argument is get the next feasible destination from
                 //a list the current state has produced
 
+                //Comment this if expression except for the AddCandidate statement to disable pruning on generation
+                
                 //check if lower bound < bssf
                 if (child.LowerBound < bssf_cost)
                     //add to agenda
                     agenda.AddCandidate(child);
                 else
-                    //Pruned!
+                {
+                    //Prune!
                     ++pruneCnt;
+                }
             }
 
             //commit candidates to agenda
