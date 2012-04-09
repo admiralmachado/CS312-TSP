@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
+using System.Threading;
 
 namespace TSP
 {
@@ -193,6 +194,9 @@ namespace TSP
             g.DrawString("n(c) means this node is the nth node in the current solution and incurs cost c to travel to the next node.", labelFont, cityBrushStartStyle, new PointF(0F, 0F)); 
 
             // Draw lines
+
+            char letter = 'a';
+
             if (bssf != null)
             {
                 // make a list of points. 
@@ -201,9 +205,9 @@ namespace TSP
                 foreach (City c in bssf.Route)
                 {
                     if (index < bssf.Route.Count -1)
-                        g.DrawString(" " + index +"("+c.costToGetTo(bssf.Route[index+1]as City)+")", labelFont, cityBrushStartStyle, new PointF((float)c.X * width + 3F, (float)c.Y * height));
-                    else 
-                        g.DrawString(" " + index +"("+c.costToGetTo(bssf.Route[0]as City)+")", labelFont, cityBrushStartStyle, new PointF((float)c.X * width + 3F, (float)c.Y * height));
+                        g.DrawString(" " + (char)(letter + index) + " id:" + c.CityId + " " + "("+c.costToGetTo(bssf.Route[index+1]as City)+")", labelFont, cityBrushStartStyle, new PointF((float)c.X * width + 3F, (float)c.Y * height));
+                    else
+                        g.DrawString(" " + (char)(letter + index) + " id:" + c.CityId + " " + "(" + c.costToGetTo(bssf.Route[0] as City) + ")", labelFont, cityBrushStartStyle, new PointF((float)c.X * width + 3F, (float)c.Y * height));
                     ps[index++] = new Point((int)(c.X * width) + CITY_ICON_SIZE / 2, (int)(c.Y * height) + CITY_ICON_SIZE / 2);
                 }
 
@@ -241,14 +245,68 @@ namespace TSP
         ///  solve the problem.  This is the entry point for the solver when the run button is clicked
         /// right now it just picks a simple solution. 
         /// </summary>
+        /// 
+
+        private BoundedBrancher solver;
+        private Thread solverThread;
+        private System.Timers.Timer timer;
+
         public void solveProblem()
         {
+            timer = new System.Timers.Timer(60000);
+            timer.Elapsed += new System.Timers.ElapsedEventHandler(timeout);
+            timer.AutoReset = false;
+
+            solver = new BoundedBrancher(Cities);
+            solverThread = new Thread(new ThreadStart(solver.BranchAndBound));
+            Console.WriteLine("Launching Solver...");
+            solverThread.Start();
+            while (!solverThread.IsAlive) ;
+            timer.Enabled = true;
+            DateTime start = DateTime.Now;
+
+            solverThread.Join();
+
+            if (timer.Enabled)
+            {
+                timer.Stop();
+                TimeSpan runtime = DateTime.Now - start;
+                Console.WriteLine("Congratulations! Runtime: " + runtime.TotalSeconds + " secs.");
+            }
+            else
+            {
+                Console.WriteLine("Timeout! Showing the BSSF.");
+            }
+
+            bssf = new TSPSolution(solver.bssf);
+            Program.MainForm.tbCostOfTour.Text = " " + bssf.costOfRoute();
+            Program.MainForm.Invalidate();
+
+            //Show Statistics
+            Console.WriteLine("Explicitly Pruned States: " + solver.PruneCount);
+            Console.WriteLine("Max State Count: " + solver.AgendaMaxSize);
+            Console.WriteLine("Path:");
+            foreach (City city in solver.bssf)
+            {
+                Console.Write(city.CityId + " ");
+            }
+            Console.WriteLine();
+        }
+
+        void timeout(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            Console.WriteLine("Thread Timeout. Aborting...");
+            solverThread.Abort();
+        }
+
+        void timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
             int x;
-            Route = new ArrayList(); 
+            Route = new ArrayList();
             // this is the trivial solution. 
             for (x = 0; x < Cities.Length; x++)
             {
-                Route.Add( Cities[Cities.Length - x -1]);
+                Route.Add(Cities[Cities.Length - x - 1]);
             }
             // call this the best solution so far.  bssf is the route that will be drawn by the Draw method. 
             bssf = new TSPSolution(Route);
